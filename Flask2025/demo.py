@@ -1,6 +1,7 @@
-from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for
+import os
+from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
 
 demo = Flask(__name__)
 demo.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///todo.db"
@@ -18,60 +19,20 @@ class Todo(db.Model):
         return f"{self.sno} - {self.title}"
 
 
-# Home Route (Add and Show Todos)
 @demo.route("/", methods=["GET", "POST"])
-def hello_world():
+def home():
     if request.method == "POST":
         title = request.form.get("title")
         desc = request.form.get("desc")
-
-        if title and desc:
-            todo = Todo(title=title, desc=desc)
-            db.session.add(todo)
-            db.session.commit()
-
+        todo = Todo(title=title, desc=desc)
+        db.session.add(todo)
+        db.session.commit()
     allTodos = Todo.query.all()
     return render_template("index.html", allTodos=allTodos)
 
 
-# Delete Route
-@demo.route("/delete/<int:sno>")
-def delete(sno):
-    todo = Todo.query.filter_by(sno=sno).first()
-    if todo:
-        db.session.delete(todo)
-        db.session.commit()
-    return redirect(url_for("hello_world"))
-
-
-# Update Route
-@demo.route("/update/<int:sno>", methods=["GET", "POST"])
-def update(sno):
-    todo = Todo.query.filter_by(sno=sno).first()
-
-    if request.method == "POST":
-        title = request.form.get("title")
-        desc = request.form.get("desc")
-
-        if title and desc:
-            todo.title = title
-            todo.desc = desc
-            db.session.commit()
-            return redirect(url_for("hello_world"))
-
-    return render_template("update.html", todo=todo)
-
-
-# Debug Route (optional)
-@demo.route("/show")
-def todos():
-    allTodos = Todo.query.all()
-    print(allTodos)
-    return "Check console for printed todos"
-
-
-# Run App
 if __name__ == "__main__":
     with demo.app_context():
         db.create_all()
-demo.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+demo.run(host="0.0.0.0", port=port, debug=True)
