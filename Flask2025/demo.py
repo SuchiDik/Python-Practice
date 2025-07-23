@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
@@ -27,12 +27,32 @@ def home():
         todo = Todo(title=title, desc=desc)
         db.session.add(todo)
         db.session.commit()
+
     allTodos = Todo.query.all()
     return render_template("index.html", allTodos=allTodos)
+
+
+@demo.route("/delete/<int:sno>")
+def delete(sno):
+    todo = Todo.query.get_or_404(sno)
+    db.session.delete(todo)
+    db.session.commit()
+    return redirect("/")
+
+
+@demo.route("/update/<int:sno>", methods=["GET", "POST"])
+def update(sno):
+    todo = Todo.query.get_or_404(sno)
+    if request.method == "POST":
+        todo.title = request.form.get("title")
+        todo.desc = request.form.get("desc")
+        db.session.commit()
+        return redirect("/")
+    return render_template("update.html", todo=todo)
 
 
 if __name__ == "__main__":
     with demo.app_context():
         db.create_all()
     port = int(os.environ.get("PORT", 5000))
-demo.run(host="0.0.0.0", port=5000, debug=True)
+demo.run(host="0.0.0.0", port=port, debug=True)
